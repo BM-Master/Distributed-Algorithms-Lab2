@@ -24,6 +24,8 @@ int cnt = 1;
 int concurrentReaders; // number of concurrent readers
 int dbop; // number of times the DB is accessed
 int rc = 0; // number of readers accessing the DB
+float wrTime;
+float rdTime;
 
 // set the type of the user
 int setType()
@@ -78,7 +80,7 @@ void *writer(void *usrw)
         // print the user's status
         printf("User %d %d ", user->id, dbop - user->db_operations);
         callStatus(user->status);
-        // usleep(10000);
+        sleep(wrTime);
 
         printf("Writer %d modified cnt to %d\n", user->id, cnt); // print the cnt value
         pthread_mutex_unlock(&rw); // unlock the mutex for writing
@@ -105,21 +107,20 @@ void *reader(void *usrr)
         pthread_mutex_lock(&rcap); // lock the mutex for concurrent readers
         while (rc > concurrentReaders) // if the number of concurrent readers is greater than the max number of admitted readers
         {
-            printf("TOO MUCH CONCURRENT READERS\n");
+            // printf("TOO MUCH CONCURRENT READERS\n");
             pthread_cond_wait(&rcond, &rcap); // wait for readers to finish their operations
         }
         pthread_mutex_unlock(&rcap); // unlock the mutex for concurrent readers
 
         
         pthread_mutex_lock(&r); // Reader acquire the lock before modifying numreader
-
-        if (rc == 0) 
+        rc++; // increment the number of readers (reader has started reading)0
+        pthread_mutex_unlock(&r); // Reader release the lock after modifying numreader
+        if (rc == 1) 
         {
             pthread_mutex_lock(&rw); // reader block the writer 
             // printf("READER LOCKED rw\n");
         }
-        rc++; // increment the number of readers (reader has started reading)
-        pthread_mutex_unlock(&r); // Reader release the lock after modifying numreader
 
         // Reading Section
         // printf("READING IN PROGRESS\n");
@@ -131,19 +132,19 @@ void *reader(void *usrr)
         printf("User %d %d ", user->id, dbop - user->db_operations);
         callStatus(user->status);
 
-        // usleep(100000 * 0.25);
+        sleep(rdTime);
 
         printf("Reader %d: read cnt as %d\n", user->id, cnt); // print the cnt value as read 
 
         pthread_mutex_lock(&r); // Reader acquire the lock before modifying numreader
         rc--; // decrement the number of readers accessing the DB (reader has finished)
-        pthread_cond_signal(&rcond); // signal to wake up waiting readers
+        pthread_mutex_unlock(&r); // Reader release the lock after modifying numreader
 
         if (rc == 0) 
         { 
             pthread_mutex_unlock(&rw); // reader release the writer
         }
-        pthread_mutex_unlock(&r); // Reader release the lock after modifying numreader
+        pthread_cond_signal(&rcond); // signal to wake up waiting readers
         user->db_operations--; // decrement the number of times the user has access to the DB
         user->status = 2; // set the status to waiting for read
     } 
@@ -162,7 +163,6 @@ void main(int argc, char *argv[])
     int totalUsers = atoi(argv[1]);             // total users
     int readerCapacity = atoi(argv[2]);         // reader capacity
     float writeTime = (atoi(argv[3])) / 1000.0; // writer time
-    float readTime = writeTime * 0.25;          // reader time
     int userQuery = atoi(argv[4]);              // user query
 
     int i;
@@ -170,7 +170,6 @@ void main(int argc, char *argv[])
     printf("Total users: %d\n", totalUsers);
     printf("Reader capacity: %d\n", readerCapacity);
     printf("Writer time: %f\n", writeTime);
-    printf("Reader time: %f\n", readTime);
     printf("User query: %d\n", userQuery);
 
     pthread_mutex_init(&r, NULL);
@@ -186,6 +185,11 @@ void main(int argc, char *argv[])
     int totalWriters = 0;
     concurrentReaders = readerCapacity;
     dbop = userQuery;
+    wrTime = writeTime;
+    rdTime = wrTime * 0.25;
+
+    printf(" WRITER TIME: %f\n", wrTime);
+    printf("READER TIME: %f\n", rdTime);
 
     for (i = 0; i < totalUsers; i++)
     {
@@ -227,6 +231,7 @@ void main(int argc, char *argv[])
     pthread_mutex_destroy(&rw);
     pthread_mutex_destroy(&r);
     pthread_mutex_destroy(&rcap);
+    
     free(threads);
     free(userArray);
 }
