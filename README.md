@@ -30,7 +30,7 @@ And you are done.
 
 * **Bastián Martínez - Computer Science Student** - *Code* 
 
-## Licencia 📄
+## License 📄
 
 This file is under GNU General Public License v3.0.
 
