@@ -26,7 +26,7 @@ gcc readers-writers.c -o "FileName" -lpthreads
 
 And you are done.
 
-## Autores ✒️
+## Author ✒️
 
 * **Bastián Martínez - Computer Science Student** - *Code* 
 
