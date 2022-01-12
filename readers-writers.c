@@ -1,5 +1,4 @@
 /*
- * Lab2.c : 
  *
  * Author: Bastian Martínez Soto
  *
