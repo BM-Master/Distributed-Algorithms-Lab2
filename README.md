@@ -18,6 +18,7 @@ The total of users is a natural number N.
 gcc readers-writers.c -lpthreads
 
 or with a custom name for the output file
+
 gcc readers-writers.c -o "FileName" -lpthreads
 
 # Execution
